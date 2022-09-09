@@ -21,7 +21,6 @@
     "mongoose": "^6.5.4",
     "node-fetch": "^2.6.7",
     "node-twitch": "^0.4.7",
-    "twit": "^2.2.11",
     "twitter-api-v2": "^1.12.5",
     "ytdl-core": "^4.11.0"
   }
