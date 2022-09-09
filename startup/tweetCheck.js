@@ -1,11 +1,12 @@
 const { bearer_token } = require('../config.json');
 const { ETwitterStreamEvent, TwitterApi } = require('twitter-api-v2');
 const Guild = require('../models/guildSchema');
+require('dotenv').config();
 let arrayFollowedTweets = [];
 module.exports = {
     
     rulesClean: async function cleanRules(){
-        const twitterClient = new TwitterApi(bearer_token);
+        const twitterClient = new TwitterApi(process.env.bearer_token);
 
         await twitterClient.v2.updateStreamRules({
             add: [],
@@ -13,7 +14,7 @@ module.exports = {
     },
     
     streamCheck: async function stream(client, guildProfile){
-        const twitterClient = new TwitterApi(bearer_token);
+        const twitterClient = new TwitterApi(process.env.bearer_token);
         let value = { "value": `${guildProfile.followedTweets[0]}` };
         
 
@@ -25,7 +26,7 @@ module.exports = {
         },
     
     streamStart: async function stream(client){
-        const twitterClient = new TwitterApi(bearer_token);
+        const twitterClient = new TwitterApi(process.env.bearer_token);
         
         const stream = await twitterClient.v2.searchStream({
             expansions: ['attachments.media_keys', 'referenced_tweets.id', 'author_id', 'referenced_tweets.id.author_id'], "media.fields": ['url', 'preview_image_url', 'variants'], "user.fields": ['profile_image_url','url'], "tweet.fields": ['entities']

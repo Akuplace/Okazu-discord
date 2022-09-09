@@ -2,6 +2,7 @@ const { ETwitterStreamEvent, TweetStream, TwitterApi, ETwitterApiError } = requi
 const Guild = require('../models/guildSchema');
 const { TWITTER_CONSUMER_KEY, TWITTER_CONSUMER_SECRET, TWITTER_ACCESSTOKEN, TWITTER_ACCESSTOKEN_SECRET, bearer_token } = require('../config.json');
 const { EmbedBuilder } = require('discord.js');
+require('dotenv').config();
 
 module.exports = {
     name: 'follow',
@@ -15,7 +16,7 @@ module.exports = {
             if(args.extraArgsList[0] !== 'add' && args.extraArgsList[0] !== 'remove' && args.extraArgsList[0] !== 'list') return message.channel.send('You need to <add> or <remove> a user to follow/unfollow.')
 
 
-            const twitterClient = new TwitterApi(bearer_token);
+            const twitterClient = new TwitterApi(process.env.bearer_token);
             
             //checks if the command has add/remove parameters
             //and if the list parameter is given, if it is

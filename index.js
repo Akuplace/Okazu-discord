@@ -4,6 +4,7 @@
 const { Client, GatewayIntentBits, Collection, messageLink } = require("discord.js");
 const { token } = require('./config.json');
 const fs = require('node:fs');
+require('dotenv').config();
 
 
 
@@ -37,4 +38,4 @@ for(const file of eventFiles){
 
 
 //Login to Discord 
-client.login(token);
+client.login(process.env.token);
