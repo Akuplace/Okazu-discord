@@ -1,6 +1,5 @@
 const { bearer_token } = require('../config.json');
-const { ETwitterStreamEvent, TweetStream, TwitterApi, ETwitterApiError } = require('twitter-api-v2');
-const { EmbedBuilder, messageLink } = require('discord.js');
+const { ETwitterStreamEvent, TwitterApi } = require('twitter-api-v2');
 const Guild = require('../models/guildSchema');
 let arrayFollowedTweets = [];
 module.exports = {
@@ -29,7 +28,7 @@ module.exports = {
         const twitterClient = new TwitterApi(bearer_token);
         
         const stream = await twitterClient.v2.searchStream({
-            expansions: ['attachments.media_keys', 'referenced_tweets.id', 'author_id', 'referenced_tweets.id.author_id'], "media.fields": ['url'], "user.fields": ['profile_image_url','url'],
+            expansions: ['attachments.media_keys', 'referenced_tweets.id', 'author_id', 'referenced_tweets.id.author_id'], "media.fields": ['url', 'preview_image_url', 'variants'], "user.fields": ['profile_image_url','url'], "tweet.fields": ['entities']
         })
         
         
@@ -55,25 +54,153 @@ module.exports = {
                             name: 'Tweeter',
                         });
                     }
-                
-                    let embed = new EmbedBuilder().setAuthor({ name: `${tweet.includes.users[0].name} (@${tweet.includes.users[0].username})`, url: `${tweet.includes.users[0].url}`, iconURL: `${tweet.includes.users[0].profile_image_url}` }).setDescription(`${tweet.data.text}`).setFooter({ text: "Twitter", iconURL: "https://logodownload.org/wp-content/uploads/2014/09/twitter-logo-4.png" }).setTimestamp();
-
-                    // if(tweet.includes.media) embed = new EmbedBuilder().setAuthor({ name: `${tweet.includes.users[0].name} (@${tweet.includes.users[0].username})`, url: `${tweet.includes.users[0].url}`, iconURL: `${tweet.includes.users[0].profile_image_url}` }).setDescription(`${tweet.data.text}`).setFooter({ text: "Twitter", iconURL: `https://imgur.com/a/AnOrrZN` }).setTimestamp().setImage(`${tweet.includes.media[0].preview_image_url}`);
-
-                    await webhook.send({
+                    
+                    let embed = {
+                        author: { 
+                            name: `${tweet.includes.users[0].name} (@${tweet.includes.users[0].username})`,
+                            icon_url: `${tweet.includes.users[0].profile_image_url}`,
+                            url: `https://www.twitter.com/${tweet.includes.users[0].username}`, 
+                        },
+                        description: `${tweet.data.text}`,
+                        footer: { 
+                            text: "Twitter", 
+                            iconURL: "https://i.pinimg.com/originals/4c/c2/3e/4cc23e28035d3bef286c29139319c044.png" 
+                        },
+                        color: 0x00ACEE,
+                        timestamp: new Date().toISOString(),
+                    }
+                    
+                    let webhookContent = {
                         content: `${tweet.includes.users[0].username} just posted a tweet!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`,
                         username: `${tweet.includes.users[0].name}`,
                         avatarURL: `${tweet.includes.users[0].profile_image_url}`,
-                        embeds: [embed]
-                    });
-                
+                        embeds: [embed],
+                    };
+
+                    if(tweet.data.referenced_tweets){
+                        if(tweet.data.referenced_tweets[0].type === 'quoted'){
+                            webhookContent.content = `${tweet.includes.users[0].username} just quoted @${tweet.includes.users[1].username}!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`
+                            
+                            let embedQuote = {
+                                author: { 
+                                    name: `${tweet.includes.users[0].name} (@${tweet.includes.users[0].username})`,
+                                    icon_url: `${tweet.includes.users[0].profile_image_url}`,
+                                    url: `https://www.twitter.com/${tweet.includes.users[0].username}`, 
+                                },
+                                description: `${tweet.data.text}`,
+                                color: 0x00ACEE,
+                            }
+
+
+                            if(tweet.includes.media){
+                                if (tweet.includes.media[0].type === 'photo') embedQuote.image = ({ url: `${tweet.includes.media[0].url}` });
+
+                                if (tweet.includes.media[0].type === 'animated_gif') embedQuote.image = ({ url: `${tweet.includes.media[0].preview_image_url}` });
+                                
+                                if (tweet.includes.media[0].type === 'video') embedQuote.image = ({ url: `${tweet.includes.media[0].preview_image_url}` });
+                            }
+                            
+                            webhookContent.embeds = [embedQuote]
+                            await webhook.send(webhookContent);
+
+                            let embedQuoted = {
+                                author: { 
+                                    name: `[QUOTED] ${tweet.includes.users[1].name} (@${tweet.includes.users[1].username})`,
+                                    icon_url: `${tweet.includes.users[1].profile_image_url}`,
+                                    url: `https://www.twitter.com/${tweet.includes.users[1].username}`, 
+                                },
+                                description: `${tweet.includes.tweets[0].text}`,
+                                color: 0x00ACEE,
+                                footer: { 
+                                    text: "Twitter", 
+                                    iconURL: "https://i.pinimg.com/originals/4c/c2/3e/4cc23e28035d3bef286c29139319c044.png" 
+                                },
+                                timestamp: new Date().toISOString(),
+                            }
+
+                            let webhookContentQuoted = {
+                                username: `${tweet.includes.users[0].name}`,
+                                avatarURL: `${tweet.includes.users[0].profile_image_url}`,
+                                embeds: [embedQuoted],
+                            };
+                            return await webhook.send(webhookContentQuoted);
+                        }
+
+                        if(tweet.data.referenced_tweets[0].type === 'replied_to'){
+                            webhookContent.content = `${tweet.includes.users[0].username} just replied to @${tweet.includes.users[1].username}!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`;
+                            
+                            let tweetData = tweet.data.text.slice(tweet.includes.users[1].username.length + 1)
+                            
+                            embed.description = `[@${tweet.includes.users[1].name}](https://twitter.com/${tweet.includes.users[1].username})${tweetData}`
+                            
+                            return await sendWebhook(tweet, embed, webhook, webhookContent);                            
+                        }
+                    }
+                    
+                    
+                    await sendWebhook(tweet, embed, webhook, webhookContent);
                     return;
                 } catch (err) {
                     console.error(err);
-                    const channel = await client.channels.fetch(guild.logChannel);
+                    const channel = await client.channels.fetch(Guilds[i].logChannel);
                     return channel.send('Something went wrong trying to make and send a webhook. Please check the bot\'s permissions.');
                 };
             }
         });
+
+        async function sendWebhook(tweet, embed, webhook, webhookContent) {
+	        let file;
+            
+            if(tweet.includes.media){
+	            if (tweet.includes.media[0].type === 'photo'){
+	                embed.image = ({ url: `${tweet.includes.media[0].url}` });
+                };
+                
+                if (tweet.includes.media[0].type === 'animated_gif') {
+	
+	                embed.image = ({ url: `${tweet.includes.media[0].preview_image_url}` });
+	
+	                let gif_url = tweet.includes.media[0].variants[0].url;
+	
+	                let fileName = gif_url.split('/')[4];
+	                file = {
+	                    attachment: gif_url,
+	                    name: fileName,
+	                };
+	            };
+                
+	            if (tweet.includes.media[0].type === 'video') {
+	
+	                embed.image = ({ url: `${tweet.includes.media[0].preview_image_url}` });
+	
+	                let bitrate = 0;
+	                let hq_video_url;
+	
+	                for (let j = 0; j < tweet.includes.media[0].variants.length; j++) {
+	                    if (tweet.includes.media[0].variants[j].bit_rate && tweet.includes.media[0].variants[j].content_type === 'video/mp4') {
+	                        if (tweet.includes.media[0].variants[j].bit_rate > bitrate) {
+	                            bitrate = tweet.includes.media[0].variants[j].bit_rate;
+	                            hq_video_url = tweet.includes.media[0].variants[j].url;
+	                        }
+	                    }
+	                }
+	                let fileName = hq_video_url.split('/')[8].slice(0, -7);
+	                file = {
+	                    attachment: hq_video_url,
+	                    name: fileName,
+	                };
+	            };
+            }
+
+            await webhook.send(webhookContent);
+            if (file) {
+                await webhook.send({
+                    username: `${tweet.includes.users[0].name}`,
+                    avatarURL: `${tweet.includes.users[0].profile_image_url}`,
+                    files: [file],
+                });
+            }
+            return;
+        }
     }
-}
+};
