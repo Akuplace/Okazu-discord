@@ -1,6 +1,5 @@
 const { ETwitterStreamEvent, TweetStream, TwitterApi, ETwitterApiError } = require('twitter-api-v2');
 const Guild = require('../models/guildSchema');
-const { TWITTER_CONSUMER_KEY, TWITTER_CONSUMER_SECRET, TWITTER_ACCESSTOKEN, TWITTER_ACCESSTOKEN_SECRET, bearer_token } = require('../config.json');
 const { EmbedBuilder } = require('discord.js');
 require('dotenv').config();
 

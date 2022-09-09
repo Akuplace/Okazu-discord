@@ -1,4 +1,3 @@
-const { bearer_token } = require('../config.json');
 const { ETwitterStreamEvent, TwitterApi } = require('twitter-api-v2');
 const Guild = require('../models/guildSchema');
 require('dotenv').config();

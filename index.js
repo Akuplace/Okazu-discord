@@ -2,7 +2,6 @@
 
 //Getting the needed discord.js classes and modules
 const { Client, GatewayIntentBits, Collection, messageLink } = require("discord.js");
-const { token } = require('./config.json');
 const fs = require('node:fs');
 require('dotenv').config();
 
