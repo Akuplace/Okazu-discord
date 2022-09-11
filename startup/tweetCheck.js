@@ -38,7 +38,7 @@ module.exports = {
             // Ignore RTs or self-sent tweets
             const isARt = tweet.data.referenced_tweets?.some(tweet => tweet.type === 'retweeted') ?? false;
             if (isARt) return;
-
+            
             const Guilds = await Guild.find({ followedTweets: tweet.includes.users[0].username }).lean();
             if(!Guilds) return;
             
@@ -79,7 +79,11 @@ module.exports = {
 
                     if(tweet.data.referenced_tweets){
                         if(tweet.data.referenced_tweets[0].type === 'quoted'){
-                            webhookContent.content = `${tweet.includes.users[0].username} just quoted @${tweet.includes.users[1].username}!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`
+                            
+                            let quotedUsername = tweet.includes.users[1]?.username || tweet.includes.users[0].username
+                            let quotedName = tweet.includes.users[1]?.name || tweet.includes.users[0].name
+                            
+                            webhookContent.content = `${tweet.includes.users[0].username} just quoted @${quotedUsername}!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`
                             
                             let embedQuote = {
                                 author: { 
@@ -100,14 +104,12 @@ module.exports = {
                                 if (tweet.includes.media[0].type === 'video') embedQuote.image = ({ url: `${tweet.includes.media[0].preview_image_url}` });
                             }
                             
-                            webhookContent.embeds = [embedQuote]
-                            await webhook.send(webhookContent);
 
                             let embedQuoted = {
                                 author: { 
-                                    name: `[QUOTED] ${tweet.includes.users[1].name} (@${tweet.includes.users[1].username})`,
-                                    icon_url: `${tweet.includes.users[1].profile_image_url}`,
-                                    url: `https://www.twitter.com/${tweet.includes.users[1].username}`, 
+                                    name: `[QUOTED] ${quotedName} (@${quotedUsername})`,
+                                    icon_url: `${tweet.includes.users[1]?.profile_image_url || tweet.includes.users[0].profile_image_url}`,
+                                    url: `https://www.twitter.com/${quotedUsername}`, 
                                 },
                                 description: `${tweet.includes.tweets[0].text}`,
                                 color: 0x00ACEE,
@@ -118,23 +120,22 @@ module.exports = {
                                 timestamp: new Date().toISOString(),
                             }
 
-                            let webhookContentQuoted = {
-                                username: `${tweet.includes.users[0].name}`,
-                                avatarURL: `${tweet.includes.users[0].profile_image_url}`,
-                                embeds: [embedQuoted],
-                            };
-                            return await webhook.send(webhookContentQuoted);
+                            webhookContent.embeds = [embedQuote, embedQuoted]
+
+                            return await webhook.send(webhookContent);
                         }
 
                         if(tweet.data.referenced_tweets[0].type === 'replied_to'){
-                            webhookContent.content = `${tweet.includes.users[0].username} just replied to @${tweet.includes.users[1].username}!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`;
+                            webhookContent.content = `${tweet.includes.users[0].username} just replied to @${tweet.includes.users[1]?.username || tweet.includes.users[0].username}!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`;
                             
                             let tweetData = tweet.data.text.slice(tweet.includes.users[1].username.length + 1)
                             
-                            embed.description = `[@${tweet.includes.users[1].name}](https://twitter.com/${tweet.includes.users[1].username})${tweetData}`
+                            embed.description = `[@${tweet.includes.users[1]?.name || tweet.includes.users[0].name}](https://twitter.com/${tweet.includes.users[1]?.username || tweet.includes.users[0].username})${tweetData}`
                             
                             return await sendWebhook(tweet, embed, webhook, webhookContent);                            
                         }
+
+                        return await sendWebhook(tweet, embed, webhook, webhookContent);
                     }
                     
                     
