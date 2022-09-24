@@ -128,7 +128,8 @@ module.exports = {
                         if(tweet.data.referenced_tweets[0].type === 'replied_to'){
                             webhookContent.content = `${tweet.includes.users[0].username} just replied to @${tweet.includes.users[1]?.username || tweet.includes.users[0].username}!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`;
                             
-                            let tweetData = tweet.data.text.slice(tweet.includes.users[1].username?.length + 1) || tweet.data.text.slice(tweet.includes.users[0].username.length + 1);
+                            let tweetData = tweet.data.text;
+                            if(tweet.includes.users[1]) tweetData = tweet.data.text.slice(tweet.includes.users[1].username.length + 1);
                             
                             embed.description = `[@${tweet.includes.users[1]?.name || tweet.includes.users[0].name}](https://twitter.com/${tweet.includes.users[1]?.username || tweet.includes.users[0].username})${tweetData}`
                             
