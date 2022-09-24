@@ -131,12 +131,10 @@ module.exports = {
                             let tweetData = tweet.data.text;
                             if(tweet.includes.users[1]) tweetData = tweet.data.text.slice(tweet.includes.users[1].username.length + 1);
                             
-                            embed.description = `[@${tweet.includes.users[1]?.name || tweet.includes.users[0].name}](https://twitter.com/${tweet.includes.users[1]?.username || tweet.includes.users[0].username})${tweetData}`
+                            embed.description = `[@${tweet.includes.users[1]?.name || tweet.includes.users[0].name}](https://twitter.com/${tweet.includes.users[1]?.username || tweet.includes.users[0].username}) ${tweetData}`
                             
                             return await sendWebhook(tweet, embed, webhook, webhookContent);                            
                         }
-
-                        return await sendWebhook(tweet, embed, webhook, webhookContent);
                     }
                     
                     
