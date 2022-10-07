@@ -45,11 +45,11 @@ module.exports = {
                 
                 if(alreadyExists.followedTweets.length) return message.channel.send('You can only follow 1 user at a time. Please remove the current user before adding a new one.');
 
-                stream(args.extraArgsList[1]);
+                stream(tweetUser.data.username);
             
-                let guildProfile = await Guild.findOneAndUpdate({ _id: message.guild.id }, { $addToSet: { followedTweets: args.extraArgsList[1] }, logChannel: message.channel.id }, { upsert: true, new: true });
+                let guildProfile = await Guild.findOneAndUpdate({ _id: message.guild.id }, { $addToSet: { followedTweets: `${tweetUser.data.username}` }, logChannel: message.channel.id }, { upsert: true, new: true });
 
-                return message.channel.send(`You are now following ${args.extraArgsList[1]}.`);
+                return message.channel.send(`You are now following ${tweetUser.data.username}.`);
             }
 
             //Removes a followed user

@@ -35,7 +35,7 @@ module.exports = {
         stream.autoReconnect = true;
     
         stream.on(ETwitterStreamEvent.Data, async tweet => {
-            // Ignore RTs or self-sent tweets
+            // Ignore RTs
             const isARt = tweet.data.referenced_tweets?.some(tweet => tweet.type === 'retweeted') ?? false;
             if (isARt) return;
             
@@ -71,7 +71,7 @@ module.exports = {
                     }
                     
                     let webhookContent = {
-                        content: `${tweet.includes.users[0].username} just posted a tweet!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`,
+                        content: `${tweet.includes.users[0].username} just posted a tweet!\n<https://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}>`,
                         username: `${tweet.includes.users[0].name}`,
                         avatarURL: `${tweet.includes.users[0].profile_image_url}`,
                         embeds: [embed],
@@ -83,7 +83,7 @@ module.exports = {
                             let quotedUsername = tweet.includes.users[1]?.username || tweet.includes.users[0].username
                             let quotedName = tweet.includes.users[1]?.name || tweet.includes.users[0].name
                             
-                            webhookContent.content = `${tweet.includes.users[0].username} just quoted @${quotedUsername}!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`
+                            webhookContent.content = `${tweet.includes.users[0].username} just quoted @${quotedUsername}!\n<https://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}>`
                             
                             let embedQuote = {
                                 author: { 
@@ -111,7 +111,7 @@ module.exports = {
                                     icon_url: `${tweet.includes.users[1]?.profile_image_url || tweet.includes.users[0].profile_image_url}`,
                                     url: `https://www.twitter.com/${quotedUsername}`, 
                                 },
-                                description: `${tweet.includes.tweets[0].text}`,
+                                description: `${tweet.includes.tweets[1].text}`,
                                 color: 0x00ACEE,
                                 footer: { 
                                     text: "Twitter", 
@@ -122,24 +122,25 @@ module.exports = {
 
                             webhookContent.embeds = [embedQuote, embedQuoted]
 
-                            return await webhook.send(webhookContent);
+                            await webhook.send(webhookContent);
+                            continue;
                         }
 
                         if(tweet.data.referenced_tweets[0].type === 'replied_to'){
-                            webhookContent.content = `${tweet.includes.users[0].username} just replied to @${tweet.includes.users[1]?.username || tweet.includes.users[0].username}!\nhttps://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}`;
+                            webhookContent.content = `${tweet.includes.users[0].username} just replied to @${tweet.includes.users[1]?.username || tweet.includes.users[0].username}!\n<https://www.twitter.com/${tweet.includes.users[0].username}/status/${tweet.data.id}>`;
                             
                             let tweetData = tweet.data.text;
                             if(tweet.includes.users[1]) tweetData = tweet.data.text.slice(tweet.includes.users[1].username.length + 1);
                             
                             embed.description = `[@${tweet.includes.users[1]?.name || tweet.includes.users[0].name}](https://twitter.com/${tweet.includes.users[1]?.username || tweet.includes.users[0].username}) ${tweetData}`
                             
-                            return await sendWebhook(tweet, embed, webhook, webhookContent);                            
+                            await sendWebhook(tweet, embed, webhook, webhookContent);
+                            continue;                    
                         }
                     }
                     
                     
                     await sendWebhook(tweet, embed, webhook, webhookContent);
-                    return;
                 } catch (err) {
                     console.error(err);
                     const channel = await client.channels.fetch(Guilds[i].logChannel);
