@@ -15,7 +15,9 @@ module.exports = {
 			if(!guild.followedTweets.length) continue;
 			streamCheck(client, guild);
 		}
+		
 		streamStart(client);
         console.log('Mogu mogu');
+
 	},
 };

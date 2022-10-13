@@ -149,6 +149,23 @@ module.exports = {
             }
         });
 
+        stream.on(ETwitterStreamEvent.ConnectionLost, () => {
+            console.error('Twitter stream connection lost.');
+        });
+        stream.on(ETwitterStreamEvent.ConnectionClosed, () => {
+            try {
+                stream.reconnect();
+            } catch(err) {
+                console.log("Connection lost. Trying to reconnect...");
+                console.error(err);
+                setTimeout(async () => {
+                    await twitterClient.v2.searchStream({
+                        expansions: ['attachments.media_keys', 'referenced_tweets.id', 'author_id', 'referenced_tweets.id.author_id'], "media.fields": ['url', 'preview_image_url', 'variants'], "user.fields": ['profile_image_url','url'], "tweet.fields": ['entities']
+                    })
+                }, 5000)
+            }
+        })
+
         async function sendWebhook(tweet, embed, webhook, webhookContent) {
 	        let file;
             
